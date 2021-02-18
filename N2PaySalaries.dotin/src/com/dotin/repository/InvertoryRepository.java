@@ -45,7 +45,7 @@ public class InvertoryRepository {
             Stream<String> lines = Files.lines(path);
             String invertoryContent = lines.collect(Collectors.joining("\t"));
             inventoryFile = Arrays.asList(invertoryContent.split("\t"));
-//            LOOGER.debug("file is reading");
+
             return convertInventoryArrayToObjectivList(inventoryFile);
         } catch (IOException d) {
             LOOGER.error(Thread.currentThread().getId()+"find file has problem ,the message::" + d.getMessage() + " dose not exite");

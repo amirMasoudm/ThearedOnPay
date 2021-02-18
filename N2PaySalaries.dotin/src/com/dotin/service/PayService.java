@@ -8,28 +8,18 @@ import com.dotin.repository.PayRepository;
 import java.util.List;
 
 public class PayService implements Runnable {
-    InvertoryRepository invertoryRepository = new InvertoryRepository();
-    final List<InvertoryVO> invertoryVOFile;
-    private PayService (){
-        invertoryVOFile   = invertoryRepository.findInventoryFile();
-    }
-    public static PayService payService=new PayService();
-    public static PayService getInstance(){
-        return payService;
 
+    List<PayVO> getPaymentFile;
+    public PayService(List<PayVO> getPaymentFile){
+       this.getPaymentFile=getPaymentFile;
     }
-
     @Override
     public void run() {
-
-        invertoryRepository.generateInventoryFile();
+        InvertoryRepository invertoryRepository = new InvertoryRepository();
         PayRepository payRepository = new PayRepository();
-        payRepository.genratePaymentFile();
-
-        List<PayVO> getPaymentFile = payRepository.getPaymentFile();
-
-        synchronized (invertoryVOFile) {
-         payRepository.paySalaries(getPaymentFile, invertoryVOFile);
+        List<InvertoryVO>  invertoryVOFile = invertoryRepository.findInventoryFile();
+        synchronized (invertoryVOFile){
+                payRepository.paySalaries(getPaymentFile, invertoryVOFile);
         }
     }
 }

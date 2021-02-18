@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PayRepository {
+public class PayRepository  {
     private final Logger LOGGER = Logger.getLogger(Main.class);
     private Path path = Paths.get("hear Type to set your transaction file Address");
     InvertoryRepository invertoryRepository = new InvertoryRepository();
@@ -47,10 +47,15 @@ public class PayRepository {
     private List<InvertoryVO> setAmountInvertories(List<PayVO> paymentList,List<InvertoryVO> invetoryFile) {
         List<InvertoryVO> invertoryList = new ArrayList<>();
         System.out.println(Thread.currentThread().getId()+"tt"+paymentList.get(0).getDepositNumber());
+        for (int i = 0; i < paymentList.size() - 1; i++) {
+//            try {
+//                Thread.sleep(1000L);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         InvertoryVO debtorInvertory = invertoryRepository.findInventory(paymentList.get(0).getDepositNumber(),invetoryFile);
         debtorInvertory.setAmount(debtorInvertory.getAmount().subtract(paymentList.get(0).getAmount()));
         invertoryList.add(debtorInvertory);
-        for (int i = 0; i < paymentList.size() - 1; i++) {
 
             InvertoryVO creditorInventory = invertoryRepository.findInventory(paymentList.get(i).getDepositNumber(), invetoryFile);
             creditorInventory.setAmount(creditorInventory.getAmount().add(paymentList.get(i).getAmount()));
@@ -58,7 +63,7 @@ public class PayRepository {
             invertoryList.add(creditorInventory);
         }
 
-        return invertoryList;
+        return  invertoryList;
     }
 
     public List<PayVO> genratePaymentFile() {
