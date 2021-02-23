@@ -3,6 +3,7 @@ package com.dotin.repository;
 import com.dotin.dto.InvertoryVO;
 import com.dotin.dto.OprationType;
 import com.dotin.dto.PayVO;
+import com.dotin.dto.TransactionVO;
 import org.apache.log4j.Logger;
 import org.apache.log4j.chainsaw.Main;
 
@@ -19,52 +20,35 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PayRepository  {
-    private final Logger LOGGER = Logger.getLogger(Main.class);
+public class PayRepository {
+    private final Logger LOGGER = Logger.getLogger(PayRepository.class);
     private Path path = Paths.get("hear Type to set your transaction file Address");
     InvertoryRepository invertoryRepository = new InvertoryRepository();
 
 
-    public void paySalaries(List<PayVO> paymentList, List<InvertoryVO> inventoryFile) {
-            BigDecimal sumTX = paymentList.get(0).getAmount();
-            sumTX = sumTX.setScale(2, RoundingMode.HALF_DOWN);
-            InvertoryVO debtorInvertory = invertoryRepository.findInventory(paymentList.get(0).getDepositNumber(), inventoryFile);
-            if (debtorInvertory.getAmount().compareTo(sumTX) >= 0) {
+    public void paySalaries(PayVO payment, PayVO debtor, List<InvertoryVO> inventoryFile) {
 
-                invertoryRepository.updateInventories(setAmountInvertories(paymentList,inventoryFile));
-                TXRepository.getInstance().setPaymentToTransaction(paymentList);
-                LOGGER.debug("pay salaries dose done");
-
+        if (payment.getOprationType().equals(OprationType.debtor)) {
+            BigDecimal sumTX = payment.getAmount();
+            InvertoryVO debtotrinventory = invertoryRepository.findInventory(payment.getDepositNumber(), inventoryFile);
+            if (debtotrinventory.getAmount().compareTo(payment.getAmount()) >= 0) {
+                invertoryRepository.updateInventories(payment);
             } else {
                 try {
-                    throw new PayException(sumTX, debtorInvertory.getAmount());
+                    throw new PayException(sumTX, debtotrinventory.getAmount());
                 } catch (PayException e) {
-                    paySalaries(genratePaymentFile(), inventoryFile);
+                    System.out.println("pay salaries failed !! becuas sum of salaries grater than debtor amount inventory");
                 }
             }
-
-    }
-    private List<InvertoryVO> setAmountInvertories(List<PayVO> paymentList,List<InvertoryVO> invetoryFile) {
-        List<InvertoryVO> invertoryList = new ArrayList<>();
-        System.out.println(Thread.currentThread().getId()+"tt"+paymentList.get(0).getDepositNumber());
-        for (int i = 0; i < paymentList.size() - 1; i++) {
-//            try {
-//                Thread.sleep(1000L);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-        InvertoryVO debtorInvertory = invertoryRepository.findInventory(paymentList.get(0).getDepositNumber(),invetoryFile);
-        debtorInvertory.setAmount(debtorInvertory.getAmount().subtract(paymentList.get(0).getAmount()));
-        invertoryList.add(debtorInvertory);
-
-            InvertoryVO creditorInventory = invertoryRepository.findInventory(paymentList.get(i).getDepositNumber(), invetoryFile);
-            creditorInventory.setAmount(creditorInventory.getAmount().add(paymentList.get(i).getAmount()));
-
-            invertoryList.add(creditorInventory);
+        } else if (payment.getOprationType().equals(OprationType.creditor)) {
+            invertoryRepository.updateInventories(payment);
+            TransactionVO transactionVO = new TransactionVO(debtor.getDepositNumber(), payment.getDepositNumber(), payment.getAmount());
+            TXRepository.getInstance().insertToTXFile(transactionVO);
         }
 
-        return  invertoryList;
     }
+
+
 
     public List<PayVO> genratePaymentFile() {
         List<PayVO> payList = new ArrayList<>();
@@ -148,9 +132,7 @@ public class PayRepository  {
         List<String> payArray = Arrays.asList(content.split("\t"));
         List<PayVO> payList = new ArrayList<>();
         for (int i = 0; i < payArray.size(); i += 3) {
-//            System.out.println(payArray.get(i));
             OprationType oprationType = OprationType.valueOf(payArray.get(i));
-
             BigDecimal amount = BigDecimal.valueOf(Double.parseDouble(payArray.get(i + 2)));
             PayVO payVO = new PayVO(oprationType, payArray.get(i + 1), amount);
             payList.add(payVO);

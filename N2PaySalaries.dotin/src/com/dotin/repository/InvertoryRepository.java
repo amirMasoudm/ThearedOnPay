@@ -2,8 +2,9 @@ package com.dotin.repository;
 
 import com.dotin.dto.InvertoryVO;
 
+import com.dotin.dto.OprationType;
+import com.dotin.dto.PayVO;
 import org.apache.log4j.Logger;
-import com.dotin.Main;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -22,7 +23,7 @@ public class InvertoryRepository {
 
 
     Path path = Paths.get("hear Type to set your transaction file Address");
-    private final Logger LOOGER = Logger.getLogger(Main.class);
+    private final Logger LOOGER = Logger.getLogger(InvertoryRepository.class);
 
 
     protected InvertoryVO findInventory(String depositNumber, List<InvertoryVO> invertoryArray) {
@@ -30,6 +31,7 @@ public class InvertoryRepository {
         for (int i = 2; i < invertoryArray.size(); i += 2) {
             if (depositNumber.equals(invertoryArray.get(i).getDepositNumber())) {
                 invertoryVO = invertoryArray.get(i);
+                break;
             }
         }
         return invertoryVO;
@@ -43,12 +45,13 @@ public class InvertoryRepository {
                 path = Paths.get(System.getProperty("user.home") + "\\invertory.txt");
             }
             Stream<String> lines = Files.lines(path);
+//            inventoryFile=lines.collect(Collectors.toList());
             String invertoryContent = lines.collect(Collectors.joining("\t"));
             inventoryFile = Arrays.asList(invertoryContent.split("\t"));
 
             return convertInventoryArrayToObjectivList(inventoryFile);
         } catch (IOException d) {
-            LOOGER.error(Thread.currentThread().getId()+"find file has problem ,the message::" + d.getMessage() + " dose not exite");
+            LOOGER.error(Thread.currentThread().getId() + "find file has problem ,the message::" + d.getMessage() + " dose not exite");
             path = Paths.get(System.getProperty("user.home") + "\\invertory.txt");
             return generateInventoryFile();
         }
@@ -83,7 +86,8 @@ public class InvertoryRepository {
         } else return findInventoryFile();
     }
 
-    private void insertToInventoryFile(InvertoryVO invertoryVO) {
+    public void insertToInventoryFile(InvertoryVO invertoryVO) {
+
         try {
             Files.write(path, invertoryVO.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
@@ -96,12 +100,16 @@ public class InvertoryRepository {
         }
     }
 
-    protected void updateInventories(List<InvertoryVO> invertoryList) {
+    protected void updateInventories(PayVO payVO) {
         List<InvertoryVO> invenoryArray = findInventoryFile();
         for (InvertoryVO lasteInvertory : invenoryArray) {
-            for (InvertoryVO newInvertory : invertoryList) {
-                if (lasteInvertory.getDepositNumber().equals(newInvertory.getDepositNumber())) {
-                    lasteInvertory.setAmount(newInvertory.getAmount());
+            if (lasteInvertory.getDepositNumber().equals(payVO.getDepositNumber())) {
+                if (payVO.getOprationType().equals(OprationType.creditor)) {
+                    lasteInvertory.setAmount(lasteInvertory.getAmount().add(payVO.getAmount()));
+                    break;
+                } else if (payVO.getOprationType().equals(OprationType.debtor)) {
+                    lasteInvertory.setAmount(lasteInvertory.getAmount().subtract(payVO.getAmount()));
+                    break;
                 }
             }
         }
